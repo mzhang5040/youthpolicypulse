@@ -1,0 +1,455 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Youth Policy Pulse{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-10 mx-auto">
+        <!-- Welcome Header -->
+        <div class="text-center mb-4">
+            <h1 class="display-5 mb-3">
+                <i class="fas fa-tachometer-alt text-primary me-3"></i>Welcome, {{ current_user.first_name }}!
+            </h1>
+            <p class="lead">Track your civic engagement and stay updated on the bills you care about.</p>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="row mb-4">
+            <div class="col-md-3 mb-3">
+                <div class="card text-center bg-primary text-white">
+                    <div class="card-body">
+                        <i class="fas fa-comments fa-2x mb-2"></i>
+                        <h4>{{ user_comments|length }}</h4>
+                        <p class="mb-0">Comments</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card text-center bg-success text-white">
+                    <div class="card-body">
+                        <i class="fas fa-thumbs-up fa-2x mb-2"></i>
+                        <h4>{{ user_votes|length }}</h4>
+                        <p class="mb-0">Votes Cast</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card text-center bg-info text-white">
+                    <div class="card-body">
+                        <i class="fas fa-bookmark fa-2x mb-2"></i>
+                        <h4>{{ watchlist|length }}</h4>
+                        <p class="mb-0">Watchlist Items</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card text-center bg-warning text-white">
+                    <div class="card-body">
+                        <i class="fas fa-bell fa-2x mb-2"></i>
+                        <h4>{{ topic_alerts|length }}</h4>
+                        <p class="mb-0">Topic Alerts</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Watchlist -->
+            <div class="col-lg-6 mb-4">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-bookmark me-2"></i>My Watchlist
+                        </h5>
+                        <div class="d-flex gap-2 align-items-center">
+                            <a href="{{ url_for('index') }}" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-search me-1"></i>Browse Bills
+                            </a>
+                            <span class="badge bg-primary">{{ watchlist|length }}</span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        {% if watchlist %}
+                            <div class="list-group list-group-flush">
+                                {% for item in watchlist %}
+                                <div class="list-group-item d-flex justify-content-between align-items-start">
+                                    <div class="ms-2 me-auto">
+                                        <div class="fw-bold">{{ item.bill_title }}</div>
+                                        <small class="text-muted">{{ item.bill_id }}</small>
+                                        {% if item.notes %}
+                                        <div class="mt-1">
+                                            <small class="text-info">
+                                                <i class="fas fa-sticky-note me-1"></i>{{ item.notes }}
+                                            </small>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="d-flex gap-1">
+                                        <a href="{{ url_for('bill_detail', bill_id=item.bill_id) }}" class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <button class="btn btn-outline-danger btn-sm" onclick="removeFromWatchlist('{{ item.bill_id }}')">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="text-center py-4">
+                                <i class="fas fa-bookmark fa-3x text-muted mb-3"></i>
+                                <h6 class="text-muted">No bills in your watchlist yet</h6>
+                                <p class="text-muted">Start tracking bills you care about!</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Topic Alerts -->
+            <div class="col-lg-6 mb-4">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-bell me-2"></i>Topic Alerts
+                        </h5>
+                        <div class="d-flex gap-2">
+                            <a href="{{ url_for('index') }}" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-search me-1"></i>Browse Bills
+                            </a>
+                            <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#alertsModal">
+                                <i class="fas fa-cog me-1"></i>Manage
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        {% if topic_alerts %}
+                            <div class="list-group list-group-flush">
+                                {% for alert in topic_alerts %}
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <i class="fas fa-tag me-2"></i>
+                                        <strong>{{ alert.topic.replace('_', ' ').title() }}</strong>
+                                        <br>
+                                        <small class="text-muted">
+                                            <i class="fas fa-calendar me-1"></i>
+                                            Alert created {{ alert.created_at.strftime('%B %d, %Y') }}
+                                        </small>
+                                    </div>
+                                    <span class="badge bg-success">Active</span>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="text-center py-4">
+                                <i class="fas fa-bell-slash fa-3x text-muted mb-3"></i>
+                                <h6 class="text-muted">No topic alerts set</h6>
+                                <p class="text-muted">Get notified about new bills on topics you care about!</p>
+                                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#alertsModal">
+                                    <i class="fas fa-plus me-1"></i>Set Up Alerts
+                                </button>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="row">
+            <!-- Recent Comments -->
+            <div class="col-lg-6 mb-4">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-comments me-2"></i>Recent Comments
+                        </h5>
+                        <a href="{{ url_for('index') }}" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-search me-1"></i>Browse Bills
+                        </a>
+                    </div>
+                    <div class="card-body">
+                        {% if user_comments %}
+                            <div class="list-group list-group-flush">
+                                {% for comment in user_comments %}
+                                <div class="list-group-item">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div class="ms-2 me-auto">
+                                            <div class="fw-bold">{{ comment.bill_id }}</div>
+                                            <p class="mb-1">{{ comment.content[:100] }}{% if comment.content|length > 100 %}...{% endif %}</p>
+                                            <small class="text-muted">
+                                                <i class="fas fa-calendar me-1"></i>
+                                                {{ comment.created_at.strftime('%B %d, %Y') }}
+                                            </small>
+                                        </div>
+                                        <span class="badge bg-{{ 'success' if comment.is_approved else 'warning' }}">
+                                            {{ 'Approved' if comment.is_approved else 'Pending' }}
+                                        </span>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="text-center py-4">
+                                <i class="fas fa-comment-slash fa-3x text-muted mb-3"></i>
+                                <h6 class="text-muted">No comments yet</h6>
+                                <p class="text-muted">Share your thoughts on bills!</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Votes -->
+            <div class="col-lg-6 mb-4">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-thumbs-up me-2"></i>Recent Votes
+                        </h5>
+                        <a href="{{ url_for('index') }}" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-search me-1"></i>Browse Bills
+                        </a>
+                    </div>
+                    <div class="card-body">
+                        {% if user_votes %}
+                            <div class="list-group list-group-flush">
+                                {% for vote in user_votes %}
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <div class="fw-bold">{{ vote.bill_id }}</div>
+                                        <small class="text-muted">
+                                            <i class="fas fa-calendar me-1"></i>
+                                            {{ vote.created_at.strftime('%B %d, %Y') }}
+                                        </small>
+                                    </div>
+                                    <span class="badge bg-{{ 'success' if vote.vote_type == 'up' else 'danger' }}">
+                                        <i class="fas fa-thumbs-{{ vote.vote_type }} me-1"></i>
+                                        {{ 'Support' if vote.vote_type == 'up' else 'Oppose' }}
+                                    </span>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="text-center py-4">
+                                <i class="fas fa-hand-paper fa-3x text-muted mb-3"></i>
+                                <h6 class="text-muted">No votes yet</h6>
+                                <p class="text-muted">Cast your first vote on a bill!</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-bolt me-2"></i>Quick Actions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-2">
+                        <a href="{{ url_for('index') }}" class="btn btn-outline-primary w-100">
+                            <i class="fas fa-search me-1"></i>Browse Bills
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{{ url_for('action_center') }}" class="btn btn-outline-success w-100">
+                            <i class="fas fa-bullhorn me-1"></i>Take Action
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{{ url_for('civics101') }}" class="btn btn-outline-info w-100">
+                            <i class="fas fa-graduation-cap me-1"></i>Learn Civics
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <button class="btn btn-outline-warning w-100" data-bs-toggle="modal" data-bs-target="#alertsModal">
+                            <i class="fas fa-bell me-1"></i>Set Alerts
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Topic Alerts Modal -->
+<div class="modal fade" id="alertsModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-bell me-2"></i>Manage Topic Alerts
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Select topics you want to be notified about when new bills are introduced:</p>
+                <form id="alertsForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="education" name="topics" value="education">
+                                <label class="form-check-label" for="education">
+                                    <i class="fas fa-graduation-cap me-1"></i>Education
+                                </label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="student_loans" name="topics" value="student_loans">
+                                <label class="form-check-label" for="student_loans">
+                                    <i class="fas fa-dollar-sign me-1"></i>Student Loans
+                                </label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="mental_health" name="topics" value="mental_health">
+                                <label class="form-check-label" for="mental_health">
+                                    <i class="fas fa-heart me-1"></i>Mental Health
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="youth_voting" name="topics" value="youth_voting">
+                                <label class="form-check-label" for="youth_voting">
+                                    <i class="fas fa-vote-yea me-1"></i>Youth Voting Rights
+                                </label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="environment" name="topics" value="environment">
+                                <label class="form-check-label" for="environment">
+                                    <i class="fas fa-leaf me-1"></i>Environment
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveAlertsBtn" onclick="updateTopicAlerts()" disabled>
+                    <i class="fas fa-save me-1"></i>Save Alerts
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Track original state and changes
+let originalTopicState = {};
+
+// Load current alerts when modal opens
+document.getElementById('alertsModal').addEventListener('show.bs.modal', function() {
+    // Check current alerts and store original state
+    originalTopicState = {};
+    {% for alert in topic_alerts %}
+    document.getElementById('{{ alert.topic }}').checked = true;
+    originalTopicState['{{ alert.topic }}'] = true;
+    {% endfor %}
+    
+    // Reset save button state
+    document.getElementById('saveAlertsBtn').disabled = true;
+    
+    // Add change listeners to all checkboxes
+    document.querySelectorAll('input[name="topics"]').forEach(checkbox => {
+        checkbox.addEventListener('change', checkForChanges);
+    });
+});
+
+// Check if there are changes and enable/disable save button
+function checkForChanges() {
+    const currentState = {};
+    document.querySelectorAll('input[name="topics"]').forEach(checkbox => {
+        currentState[checkbox.value] = checkbox.checked;
+    });
+    
+    // Compare current state with original state
+    const hasChanges = JSON.stringify(currentState) !== JSON.stringify(originalTopicState);
+    document.getElementById('saveAlertsBtn').disabled = !hasChanges;
+}
+
+function updateTopicAlerts() {
+    const selectedTopics = Array.from(document.querySelectorAll('input[name="topics"]:checked'))
+        .map(checkbox => checkbox.value);
+    
+    fetch('/api/topic-alerts', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            topics: selectedTopics
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification(data.message, 'success');
+            // Update original state to current state
+            originalTopicState = {};
+            document.querySelectorAll('input[name="topics"]').forEach(checkbox => {
+                originalTopicState[checkbox.value] = checkbox.checked;
+            });
+            // Disable save button after successful save
+            document.getElementById('saveAlertsBtn').disabled = true;
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showNotification(data.error || 'Failed to update alerts', 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Error updating alerts', 'danger');
+    });
+}
+
+function removeFromWatchlist(billId) {
+    if (confirm('Remove this bill from your watchlist?')) {
+        fetch(`/api/watchlist/${billId}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification(data.message, 'success');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showNotification(data.error || 'Failed to remove from watchlist', 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Error removing from watchlist', 'danger');
+        });
+    }
+}
+
+// Utility function for notifications
+function showNotification(message, type = 'info') {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    alertDiv.style.top = '20px';
+    alertDiv.style.right = '20px';
+    alertDiv.style.zIndex = '9999';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(alertDiv);
+    
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 5000);
+}
+</script>
+{% endblock %}
+
+
+

@@ -1,0 +1,809 @@
+{% extends "base.html" %}
+
+{% block title %}Action Center - Youth Policy Pulse{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-10 mx-auto">
+        <!-- Header -->
+        <div class="text-center mb-5">
+            <h1 class="display-4 mb-3">
+                <i class="fas fa-bullhorn text-primary me-3"></i>Action Center
+            </h1>
+            <p class="lead">Take action on the issues you care about. Contact your representatives, learn advocacy strategies, and join youth events.</p>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="row mb-5">
+            <div class="col-md-4 mb-3">
+                <div class="card text-center h-100">
+                    <div class="card-body">
+                        <i class="fas fa-envelope fa-3x text-primary mb-3"></i>
+                        <h5>Email Your Rep</h5>
+                        <p class="text-muted">Send personalized emails to your representatives</p>
+                        {% if current_user.is_authenticated %}
+                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#emailModal">
+                                <i class="fas fa-paper-plane me-1"></i>Start Writing
+                            </button>
+                        {% else %}
+                            <button class="btn btn-primary" onclick="showLoginRequired()">
+                                <i class="fas fa-paper-plane me-1"></i>Start Writing
+                            </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="card text-center h-100">
+                    <div class="card-body">
+                        <i class="fas fa-lightbulb fa-3x text-warning mb-3"></i>
+                        <h5>Advocacy Tips</h5>
+                        <p class="text-muted">Learn effective strategies for bill advocacy</p>
+                        <a href="#advocacy-tips" class="btn btn-warning">
+                            <i class="fas fa-book me-1"></i>Learn More
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="card text-center h-100">
+                    <div class="card-body">
+                        <i class="fas fa-calendar-alt fa-3x text-success mb-3"></i>
+                        <h5>Youth Events</h5>
+                        <p class="text-muted">Join upcoming advocacy events and workshops</p>
+                        <a href="#youth-events" class="btn btn-success">
+                            <i class="fas fa-calendar me-1"></i>View Events
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Email Templates Section -->
+        <div class="card mb-5">
+            <div class="card-header bg-primary text-white">
+                <h3 class="mb-0">
+                    <i class="fas fa-envelope me-2"></i>Email Templates
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-lg-8">
+                        <h5>Ready-to-Use Templates</h5>
+                        <p>Choose from our pre-written templates or create your own personalized message.</p>
+                        
+                        <div class="template-cards">
+                            <div class="card mb-3 template-card" data-template="support">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h6 class="card-title">
+                                                <i class="fas fa-thumbs-up text-success me-2"></i>Support a Bill
+                                            </h6>
+                                            <p class="card-text">Express your support for legislation you believe in.</p>
+                                        </div>
+                                        <button class="btn btn-outline-primary btn-sm" onclick="loadTemplate('support')">
+                                            Use Template
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="card mb-3 template-card" data-template="oppose">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h6 class="card-title">
+                                                <i class="fas fa-thumbs-down text-danger me-2"></i>Oppose a Bill
+                                            </h6>
+                                            <p class="card-text">Voice your concerns about legislation you disagree with.</p>
+                                        </div>
+                                        <button class="btn btn-outline-primary btn-sm" onclick="loadTemplate('oppose')">
+                                            Use Template
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="card mb-3 template-card" data-template="education">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h6 class="card-title">
+                                                <i class="fas fa-graduation-cap text-info me-2"></i>Education Issues
+                                            </h6>
+                                            <p class="card-text">Advocate for student loans, school funding, and education policy.</p>
+                                        </div>
+                                        <button class="btn btn-outline-primary btn-sm" onclick="loadTemplate('education')">
+                                            Use Template
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="card mb-3 template-card" data-template="environment">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h6 class="card-title">
+                                                <i class="fas fa-leaf text-success me-2"></i>Environmental Issues
+                                            </h6>
+                                            <p class="card-text">Advocate for climate action and environmental protection.</p>
+                                        </div>
+                                        <button class="btn btn-outline-primary btn-sm" onclick="loadTemplate('environment')">
+                                            Use Template
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-4">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h6><i class="fas fa-tips me-2"></i>Email Writing Tips</h6>
+                                <ul class="list-unstyled small">
+                                    <li class="mb-2">
+                                        <i class="fas fa-check text-success me-2"></i>
+                                        Be specific about the bill number
+                                    </li>
+                                    <li class="mb-2">
+                                        <i class="fas fa-check text-success me-2"></i>
+                                        Share your personal story
+                                    </li>
+                                    <li class="mb-2">
+                                        <i class="fas fa-check text-success me-2"></i>
+                                        Be respectful and professional
+                                    </li>
+                                    <li class="mb-2">
+                                        <i class="fas fa-check text-success me-2"></i>
+                                        Include your address (proves you're a constituent)
+                                    </li>
+                                    <li class="mb-2">
+                                        <i class="fas fa-check text-success me-2"></i>
+                                        Keep it concise (under 300 words)
+                                    </li>
+                                </ul>
+                                
+                                <hr>
+                                
+                                <h6><i class="fas fa-info-circle me-2"></i>Finding Your Reps</h6>
+                                <p class="small">Use your ZIP code to find your House representative and Senators at:</p>
+                                <a href="https://www.house.gov/representatives/find-your-representative" target="_blank" class="btn btn-outline-primary btn-sm">
+                                    <i class="fas fa-external-link-alt me-1"></i>Find Your Rep
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Advocacy Tips Section -->
+        <div class="card mb-5" id="advocacy-tips">
+            <div class="card-header bg-warning text-dark">
+                <h3 class="mb-0">
+                    <i class="fas fa-lightbulb me-2"></i>Advocacy Tips
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-lg-8">
+                        <h5>Effective Advocacy Strategies</h5>
+                        <p>Learn how to make your voice heard and influence legislation effectively.</p>
+                        
+                        <div class="accordion" id="advocacyAccordion">
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="headingOne">
+                                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne">
+                                        <i class="fas fa-envelope me-2"></i>Email Advocacy
+                                    </button>
+                                </h2>
+                                <div id="collapseOne" class="accordion-collapse collapse show" data-bs-parent="#advocacyAccordion">
+                                    <div class="accordion-body">
+                                        <h6>Best Practices:</h6>
+                                        <ul>
+                                            <li><strong>Subject Line:</strong> Include the bill number and your position</li>
+                                            <li><strong>Personal Story:</strong> Share how the bill affects you personally</li>
+                                            <li><strong>Facts:</strong> Include relevant statistics or research</li>
+                                            <li><strong>Call to Action:</strong> Clearly state what you want them to do</li>
+                                            <li><strong>Follow Up:</strong> Send thank you notes for their response</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="headingTwo">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo">
+                                        <i class="fas fa-phone me-2"></i>Phone Calls
+                                    </button>
+                                </h2>
+                                <div id="collapseTwo" class="accordion-collapse collapse" data-bs-parent="#advocacyAccordion">
+                                    <div class="accordion-body">
+                                        <h6>Phone Call Tips:</h6>
+                                        <ul>
+                                            <li><strong>Be Prepared:</strong> Have your talking points ready</li>
+                                            <li><strong>Be Brief:</strong> Keep calls under 3 minutes</li>
+                                            <li><strong>Be Polite:</strong> Staff members are people too</li>
+                                            <li><strong>Ask Questions:</strong> "What is the representative's position on this bill?"</li>
+                                            <li><strong>Follow Up:</strong> Send a thank you email after the call</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="headingThree">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree">
+                                        <i class="fas fa-users me-2"></i>Social Media
+                                    </button>
+                                </h2>
+                                <div id="collapseThree" class="accordion-collapse collapse" data-bs-parent="#advocacyAccordion">
+                                    <div class="accordion-body">
+                                        <h6>Social Media Advocacy:</h6>
+                                        <ul>
+                                            <li><strong>Tag Your Rep:</strong> Use @mentions to get their attention</li>
+                                            <li><strong>Use Hashtags:</strong> #BillNumber, #YourState, #IssueArea</li>
+                                            <li><strong>Share Stories:</strong> Personal narratives are powerful</li>
+                                            <li><strong>Engage Others:</strong> Encourage friends to take action</li>
+                                            <li><strong>Stay Respectful:</strong> Maintain professionalism online</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="headingFour">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFour">
+                                        <i class="fas fa-building me-2"></i>In-Person Meetings
+                                    </button>
+                                </h2>
+                                <div id="collapseFour" class="accordion-collapse collapse" data-bs-parent="#advocacyAccordion">
+                                    <div class="accordion-body">
+                                        <h6>Meeting Your Representative:</h6>
+                                        <ul>
+                                            <li><strong>Schedule Ahead:</strong> Book appointments weeks in advance</li>
+                                            <li><strong>Dress Professionally:</strong> First impressions matter</li>
+                                            <li><strong>Bring Materials:</strong> One-page fact sheets, personal stories</li>
+                                            <li><strong>Listen Actively:</strong> Understand their perspective</li>
+                                            <li><strong>Follow Up:</strong> Send thank you notes and additional information</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-4">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h6><i class="fas fa-chart-line me-2"></i>Advocacy Impact</h6>
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between">
+                                        <span>Email</span>
+                                        <span class="badge bg-primary">High Impact</span>
+                                    </div>
+                                    <div class="progress mb-2" style="height: 8px;">
+                                        <div class="progress-bar bg-primary" style="width: 90%"></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between">
+                                        <span>Phone Call</span>
+                                        <span class="badge bg-success">Very High</span>
+                                    </div>
+                                    <div class="progress mb-2" style="height: 8px;">
+                                        <div class="progress-bar bg-success" style="width: 95%"></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between">
+                                        <span>Social Media</span>
+                                        <span class="badge bg-info">Medium</span>
+                                    </div>
+                                    <div class="progress mb-2" style="height: 8px;">
+                                        <div class="progress-bar bg-info" style="width: 70%"></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between">
+                                        <span>In-Person</span>
+                                        <span class="badge bg-warning">Highest</span>
+                                    </div>
+                                    <div class="progress mb-2" style="height: 8px;">
+                                        <div class="progress-bar bg-warning" style="width: 100%"></div>
+                                    </div>
+                                </div>
+                                
+                                <hr>
+                                
+                                <h6><i class="fas fa-clock me-2"></i>Timing Matters</h6>
+                                <ul class="small">
+                                    <li><strong>Best:</strong> When bill is in committee</li>
+                                    <li><strong>Good:</strong> Before floor vote</li>
+                                    <li><strong>Urgent:</strong> During voting period</li>
+                                    <li><strong>Too Late:</strong> After final passage</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Youth Events Section -->
+        <div class="card mb-5" id="youth-events">
+            <div class="card-header bg-success text-white">
+                <h3 class="mb-0">
+                    <i class="fas fa-calendar-alt me-2"></i>Youth Advocacy Events
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-lg-8">
+                        <h5>Upcoming Events & Opportunities</h5>
+                        <p>Join other young people in making a difference. Find events, workshops, and advocacy opportunities near you.</p>
+                        
+                        <div class="events-list">
+                            <div class="card mb-3 event-card">
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-8">
+                                            <h6 class="card-title">
+                                                <i class="fas fa-graduation-cap text-primary me-2"></i>Student Loan Advocacy Workshop
+                                            </h6>
+                                            <p class="card-text">
+                                                <strong>Date:</strong> March 15, 2026<br>
+                                                <strong>Time:</strong> 2:00 PM - 4:00 PM EST<br>
+                                                <strong>Location:</strong> Virtual (Zoom)<br>
+                                                <strong>Description:</strong> Learn how to advocate for student loan forgiveness and affordable higher education.
+                                            </p>
+                                        </div>
+                                        <div class="col-md-4 text-end">
+                                            <button class="btn btn-outline-primary btn-sm register-btn" 
+                                                    data-event="Student Loan Advocacy Workshop"
+                                                    data-date="March 15, 2026"
+                                                    data-time="2:00 PM - 4:00 PM EST"
+                                                    data-location="Virtual (Zoom)">
+                                                <i class="fas fa-calendar-plus me-1"></i>Register
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="card mb-3 event-card">
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-8">
+                                            <h6 class="card-title">
+                                                <i class="fas fa-leaf text-success me-2"></i>Climate Action Youth Summit
+                                            </h6>
+                                            <p class="card-text">
+                                                <strong>Date:</strong> March 22, 2026<br>
+                                                <strong>Time:</strong> 10:00 AM - 6:00 PM EST<br>
+                                                <strong>Location:</strong> Washington, DC<br>
+                                                <strong>Description:</strong> Join young climate activists for a day of workshops, networking, and advocacy training.
+                                            </p>
+                                        </div>
+                                        <div class="col-md-4 text-end">
+                                            <button class="btn btn-outline-success btn-sm register-btn" 
+                                                    data-event="Climate Action Youth Summit"
+                                                    data-date="March 22, 2026"
+                                                    data-time="10:00 AM - 6:00 PM EST"
+                                                    data-location="Washington, DC">
+                                                <i class="fas fa-calendar-plus me-1"></i>Register
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="card mb-3 event-card">
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-8">
+                                            <h6 class="card-title">
+                                                <i class="fas fa-heart text-danger me-2"></i>Mental Health Advocacy Training
+                                            </h6>
+                                            <p class="card-text">
+                                                <strong>Date:</strong> April 5, 2026<br>
+                                                <strong>Time:</strong> 7:00 PM - 8:30 PM EST<br>
+                                                <strong>Location:</strong> Virtual (Zoom)<br>
+                                                <strong>Description:</strong> Learn how to advocate for better mental health resources and policies.
+                                            </p>
+                                        </div>
+                                        <div class="col-md-4 text-end">
+                                            <button class="btn btn-outline-primary btn-sm register-btn" 
+                                                    data-event="Mental Health Advocacy Training"
+                                                    data-date="April 5, 2026"
+                                                    data-time="7:00 PM - 8:30 PM EST"
+                                                    data-location="Virtual (Zoom)">
+                                                <i class="fas fa-calendar-plus me-1"></i>Register
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="card mb-3 event-card">
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-8">
+                                            <h6 class="card-title">
+                                                <i class="fas fa-vote-yea text-info me-2"></i>Youth Voting Rights Rally
+                                            </h6>
+                                            <p class="card-text">
+                                                <strong>Date:</strong> April 20, 2026<br>
+                                                <strong>Time:</strong> 12:00 PM - 3:00 PM EST<br>
+                                                <strong>Location:</strong> State Capitol Building<br>
+                                                <strong>Description:</strong> Rally for expanded voting rights and easier voter registration for young people.
+                                            </p>
+                                        </div>
+                                        <div class="col-md-4 text-end">
+                                            <button class="btn btn-outline-primary btn-sm register-btn" 
+                                                    data-event="Youth Voting Rights Rally"
+                                                    data-date="April 20, 2026"
+                                                    data-time="12:00 PM - 3:00 PM EST"
+                                                    data-location="State Capitol Building">
+                                                <i class="fas fa-calendar-plus me-1"></i>Register
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-4">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h6><i class="fas fa-info-circle me-2"></i>Event Information</h6>
+                                <ul class="list-unstyled small">
+                                    <li class="mb-2">
+                                        <i class="fas fa-check text-success me-2"></i>
+                                        All events welcome students and young adults
+                                    </li>
+                                    <li class="mb-2">
+                                        <i class="fas fa-check text-success me-2"></i>
+                                        No prior experience required
+                                    </li>
+                                    <li class="mb-2">
+                                        <i class="fas fa-check text-success me-2"></i>
+                                        Materials and resources provided
+                                    </li>
+                                    <li class="mb-2">
+                                        <i class="fas fa-check text-success me-2"></i>
+                                        Networking opportunities included
+                                    </li>
+                                </ul>
+                                
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Email Modal -->
+<div class="modal fade" id="emailModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-envelope me-2"></i>Email Your Representative
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="emailForm">
+                    <!-- User info is auto-filled from logged-in user -->
+                    <input type="hidden" id="senderName" value="{{ current_user.first_name }} {{ current_user.last_name }}">
+                    <input type="hidden" id="senderEmail" value="{{ current_user.email }}">
+                    
+                    <div class="mb-3">
+                        <label for="representativeEmail" class="form-label">Representative's Email</label>
+                        <input type="email" class="form-control" id="representativeEmail" placeholder="rep.lastname@house.gov" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="emailSubject" class="form-label">Subject</label>
+                        <input type="text" class="form-control" id="emailSubject" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="emailMessage" class="form-label">Message</label>
+                        <textarea class="form-control" id="emailMessage" rows="8" required></textarea>
+                        <div class="form-text">Keep your message under 300 words for maximum impact.</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="includeAddress" checked>
+                            <label class="form-check-label" for="includeAddress">
+                                Include my address to prove I'm a constituent
+                            </label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="sendEmail()">
+                    <i class="fas fa-paper-plane me-1"></i>Send Email
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Email templates
+const templates = {
+    support: {
+        subject: "Support for [Bill Number] - [Bill Title]",
+        message: `Dear Representative [Last Name],
+
+I am writing to express my strong support for [Bill Number], [Bill Title]. As a constituent in your district, I believe this legislation will have a positive impact on our community.
+
+[Personal story or reason for support]
+
+This bill addresses important issues that matter to me and many others in our district. I urge you to vote in favor of this legislation and help move it forward.
+
+Thank you for your service and for considering my views on this important matter.
+
+Sincerely,
+[Your Name]
+[Your Address]`
+    },
+    oppose: {
+        subject: "Concerns about [Bill Number] - [Bill Title]",
+        message: `Dear Representative [Last Name],
+
+I am writing to express my concerns about [Bill Number], [Bill Title]. As a constituent in your district, I believe this legislation would have negative consequences for our community.
+
+[Personal story or reason for opposition]
+
+This bill raises serious concerns for me and many others in our district. I urge you to vote against this legislation.
+
+Thank you for your service and for considering my views on this important matter.
+
+Sincerely,
+[Your Name]
+[Your Address]`
+    },
+    education: {
+        subject: "Support for Student Loan Reform - [Bill Number]",
+        message: `Dear Representative [Last Name],
+
+I am writing to urge your support for student loan reform legislation. As a [student/graduate/parent] in your district, I have experienced firsthand the burden of student debt.
+
+[Personal story about student loans]
+
+Student loan debt affects millions of Americans and limits economic opportunity. I urge you to support legislation that provides relief to student borrowers and makes higher education more affordable.
+
+Thank you for your service and for considering my views on this important matter.
+
+Sincerely,
+[Your Name]
+[Your Address]`
+    },
+    environment: {
+        subject: "Climate Action Needed - Support Environmental Legislation",
+        message: `Dear Representative [Last Name],
+
+I am writing to urge your support for strong environmental legislation to address climate change. As a young person in your district, I am deeply concerned about the future of our planet.
+
+[Personal story about climate concerns]
+
+Climate change is the defining issue of our time, and we need bold action now. I urge you to support legislation that reduces emissions, promotes renewable energy, and protects our environment.
+
+Thank you for your service and for considering my views on this important matter.
+
+Sincerely,
+[Your Name]
+[Your Address]`
+    }
+};
+
+function loadTemplate(templateType) {
+    const template = templates[templateType];
+    if (template) {
+        document.getElementById('emailSubject').value = template.subject;
+        document.getElementById('emailMessage').value = template.message;
+        
+        // Show the modal
+        const modal = new bootstrap.Modal(document.getElementById('emailModal'));
+        modal.show();
+    }
+}
+
+function sendEmail() {
+    const formData = {
+        sender_name: document.getElementById('senderName').value,
+        sender_email: document.getElementById('senderEmail').value,
+        representative_email: document.getElementById('representativeEmail').value,
+        subject: document.getElementById('emailSubject').value,
+        message: document.getElementById('emailMessage').value
+    };
+    
+    // Validate form
+    if (!formData.sender_name || !formData.sender_email || !formData.representative_email || !formData.subject || !formData.message) {
+        showNotification('Please fill in all required fields', 'danger');
+        return;
+    }
+    
+    const submitBtn = document.querySelector('#emailModal .btn-primary');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Sending...';
+    submitBtn.disabled = true;
+    
+    fetch('/api/send-email', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification(data.message, 'success');
+            
+            // Close modal and reset form
+            const modal = bootstrap.Modal.getInstance(document.getElementById('emailModal'));
+            modal.hide();
+            document.getElementById('emailForm').reset();
+        } else {
+            showNotification(data.error || 'Failed to send email', 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Error sending email', 'danger');
+    })
+    .finally(() => {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    });
+}
+
+// Utility function for notifications
+function showNotification(message, type = 'info') {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    alertDiv.style.top = '50%';
+    alertDiv.style.left = '50%';
+    alertDiv.style.transform = 'translate(-50%, -50%)';
+    alertDiv.style.zIndex = '9999';
+    alertDiv.style.minWidth = '300px';
+    alertDiv.style.textAlign = 'center';
+    alertDiv.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
+    alertDiv.innerHTML = `
+        <div class="d-flex align-items-center justify-content-center">
+            <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'danger' ? 'exclamation-triangle' : type === 'warning' ? 'exclamation-circle' : 'info-circle'} me-2"></i>
+            ${message}
+        </div>
+        <button type="button" class="btn-close position-absolute" style="top: 10px; right: 10px;" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(alertDiv);
+    
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 5000);
+}
+
+// Function to show login required message
+function showLoginRequired() {
+    showNotification('Please log in to use the Email Your Rep feature', 'info');
+    setTimeout(() => {
+        window.location.href = '/login?next=' + encodeURIComponent(window.location.pathname);
+    }, 2000);
+}
+
+// Event registration functionality
+document.addEventListener('DOMContentLoaded', function() {
+    // Add click handlers to all register buttons
+    document.querySelectorAll('.register-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const eventName = this.getAttribute('data-event');
+            const eventDate = this.getAttribute('data-date');
+            const eventTime = this.getAttribute('data-time');
+            const eventLocation = this.getAttribute('data-location');
+            
+            registerForEvent(eventName, eventDate, eventTime, eventLocation, this);
+        });
+    });
+});
+
+function registerForEvent(eventName, eventDate, eventTime, eventLocation, button) {
+    // Check if user is logged in
+    fetch('/api/user/activity')
+        .then(response => {
+            if (response.status === 401 || response.status === 403) {
+                // User is not logged in
+                showNotification('Please log in to register for events', 'info');
+                // Show a more elegant modal or redirect to login
+                setTimeout(() => {
+                    window.location.href = '/login?next=' + encodeURIComponent(window.location.pathname);
+                }, 1500);
+                return null;
+            }
+            if (!response.ok) {
+                throw new Error('Network error');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data) {
+                // User is logged in, proceed with registration
+                const registrationData = {
+                    event_name: eventName,
+                    event_date: eventDate,
+                    event_time: eventTime,
+                    event_location: eventLocation
+                };
+                
+                fetch('/api/events/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(registrationData)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showNotification(data.message, 'success');
+                        // Update button to show registered state
+                        button.innerHTML = '<i class="fas fa-check me-1"></i>Registered';
+                        button.classList.remove('btn-outline-primary', 'btn-outline-success');
+                        button.classList.add('btn-success');
+                        button.disabled = true;
+                    } else {
+                        showNotification(data.error || 'Failed to register for event', 'danger');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showNotification('Unable to register for event at this time', 'warning');
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            // More elegant error handling - assume user is not logged in
+            showNotification('Please log in to register for events', 'info');
+            setTimeout(() => {
+                window.location.href = '/login?next=' + encodeURIComponent(window.location.pathname);
+            }, 1500);
+        });
+}
+
+// Smooth scrolling for navigation
+document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+            target.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }
+    });
+});
+</script>
+{% endblock %}
+
+

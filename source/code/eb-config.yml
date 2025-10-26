@@ -1,0 +1,60 @@
+# Elastic Beanstalk configuration file
+# This file contains the default configuration for the EB environment
+
+option_settings:
+  # Application settings
+  aws:elasticbeanstalk:application:environment:
+    PYTHONPATH: "/var/www/html:$PYTHONPATH"
+  
+  # Platform settings
+  aws:elasticbeanstalk:container:python:
+    WSGIPath: application.py
+  
+  # Instance settings
+  aws:autoscaling:launchconfiguration:
+    InstanceType: t3.micro
+    IamInstanceProfile: aws-elasticbeanstalk-ec2-role
+    SecurityGroups: default
+  
+  # Auto Scaling settings
+  aws:autoscaling:asg:
+    MinSize: 1
+    MaxSize: 3
+  
+  aws:autoscaling:trigger:
+    MeasureName: CPUUtilization
+    Unit: Percent
+    LowerThreshold: 20
+    UpperThreshold: 80
+    ScaleUpIncrement: 1
+    ScaleDownIncrement: -1
+  
+  # Load balancer settings
+  aws:elbv2:loadbalancer:
+    IdleTimeout: 60
+  
+  # Health reporting
+  aws:elasticbeanstalk:healthreporting:system:
+    SystemType: enhanced
+    HealthCheckSuccessThreshold: Ok
+  
+  # Logging
+  aws:elasticbeanstalk:cloudwatch:logs:
+    StreamLogs: true
+    DeleteOnTerminate: false
+    RetentionInDays: 7
+  
+  aws:elasticbeanstalk:cloudwatch:logs:health:
+    HealthStreamingEnabled: true
+    DeleteOnTerminate: false
+    RetentionInDays: 7
+  
+  # Static files
+  aws:elasticbeanstalk:environment:proxy:staticfiles:
+    /static: static
+  
+  # Environment variables (will be overridden by eb setenv)
+  aws:elasticbeanstalk:application:environment:
+    FLASK_ENV: production
+    DEBUG: "False"
+

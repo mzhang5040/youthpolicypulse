@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}About - Youth Policy Pulse{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="card">
+            <div class="card-body">
+                <h1 class="card-title text-center mb-4">
+                    <i class="fas fa-balance-scale text-primary me-2"></i>About Youth Policy Pulse
+                </h1>
+                <p class="text-center text-muted mb-4 lead">Study statutes. Spark solutions.</p>
+                
+                <div class="mb-4">
+                    <p class="lead">Youth Policy Pulse is where young people turn curiosity into change. We spotlight the laws that shape your daily life. Every bill comes with verified sources and simple ways to engage: follow a bill's progress, share your perspective, and find concrete steps to get involved in your community. We believe informed students become powerful citizens—and real progress begins with understanding. Learn boldly, speak confidently, and help shape what comes next. Study statutes. Spark solutions.</p>
+                </div>
+                
+                
+                <hr class="my-4">
+                
+                <!-- Meet the Team Section -->
+                <div class="row">
+                    <div class="col-12">
+                        <h3 class="text-center mb-4">
+                            <i class="fas fa-users text-primary me-2"></i>Meet the Team
+                        </h3>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-4">
+                        <div class="card h-100">
+                            <div class="card-body text-center">
+                                <div class="mb-3">
+                                    <img src="{{ url_for('static', filename='images/Michael_Zhang_Headshot7.jpeg') }}" 
+                                         alt="Michael Zhang" 
+                                         class="rounded-circle" 
+                                         style="width: 120px; height: 120px; object-fit: cover;">
+                                </div>
+                                <h5 class="card-title">Michael Zhang</h5>
+                                <p class="card-text">Michael is a junior at Cherry Creek High School in Denver, Colorado.</p>
+                                <p class="card-text">As a youth leader serving on several state committees, MMM advocates strongly for greater youth representation in public decision-making. His long-term goal is to harness mathematics and technology to modernize government, enhancing both efficiency and transparency.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6 mb-4">
+                        <div class="card h-100">
+                            <div class="card-body text-center">
+                                <div class="mb-3">
+                                    <img src="{{ url_for('static', filename='images/GavinVernon.jpg') }}" 
+                                         alt="Gavin Vernon" 
+                                         class="rounded-circle" 
+                                         style="width: 120px; height: 120px; object-fit: cover;">
+                                </div>
+                                <h5 class="card-title">Gavin Vernon</h5>
+                                <p class="card-text">Gavin is a junior at Brownell Talbot School in Omaha, Nebraska.</p>
+                                <p class="card-text">Gavin, the founder of Youth for Better Living, is dedicated to assisting young individuals in making informed choices. By combining his leadership skills and mathematical expertise, he is actively involved in advocating for legislation that supports the development of youth.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="text-center mt-4">
+                    <a href="{{ url_for('index') }}" class="btn btn-primary me-2">
+                        <i class="fas fa-home me-1"></i>Back to Home
+                    </a>
+                    <a href="{{ url_for('contact') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-envelope me-1"></i>Contact Us
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

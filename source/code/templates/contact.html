@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block title %}Contact - Youth Policy Pulse{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="card">
+            <div class="card-body">
+                <h1 class="card-title text-center mb-4">
+                    <i class="fas fa-envelope text-primary me-2"></i>Contact Us
+                </h1>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <h3>Get in Touch</h3>
+                        <p class="text-muted">We'd love to hear from you! Send us a message and we'll respond as soon as possible.</p>
+                        
+                        <div class="contact-info">
+                            <div class="d-flex align-items-center mb-3">
+                                <i class="fas fa-envelope text-primary me-3"></i>
+                                <div>
+                                    <h6 class="mb-0">Email</h6>
+                                    <small class="text-muted">youthpolicypulse@gmail.com</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        {% if current_user.is_authenticated %}
+                            <!-- Logged-in user form -->
+                            <div class="alert alert-info">
+                                <i class="fas fa-user me-2"></i>
+                                <strong>Logged in as:</strong> {{ current_user.first_name }} {{ current_user.last_name }} ({{ current_user.email }})
+                            </div>
+                            <form method="POST" action="{{ url_for('contact') }}">
+                                <div class="mb-3">
+                                    <label for="message" class="form-label">Message</label>
+                                    <textarea class="form-control" id="message" name="message" rows="5" required placeholder="Your message will be sent immediately..."></textarea>
+                                </div>
+                                
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-paper-plane me-1"></i>Send Message
+                                    </button>
+                                </div>
+                            </form>
+                        {% else %}
+                            <!-- Non-logged-in user form -->
+                            <div class="alert alert-warning">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>Note:</strong> You'll need to verify your email address before your message is sent.
+                            </div>
+                            <form method="POST" action="{{ url_for('contact') }}">
+                                <div class="mb-3">
+                                    <label for="name" class="form-label">Name</label>
+                                    <input type="text" class="form-control" id="name" name="name" required>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="email" class="form-label">Email</label>
+                                    <input type="email" class="form-control" id="email" name="email" required>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="message" class="form-label">Message</label>
+                                    <textarea class="form-control" id="message" name="message" rows="5" required></textarea>
+                                </div>
+                                
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-paper-plane me-1"></i>Send Message
+                                    </button>
+                                </div>
+                            </form>
+                            
+                            <div class="text-center mt-3">
+                                <p class="mb-0">
+                                    <a href="{{ url_for('login') }}" class="text-decoration-none">
+                                        <i class="fas fa-sign-in-alt me-1"></i>Login to send messages instantly
+                                    </a>
+                                </p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <hr class="my-4">
+                
+                
+                <div class="text-center mt-4">
+                    <a href="{{ url_for('index') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-home me-1"></i>Back to Home
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

@@ -1,0 +1,360 @@
+{% extends "base.html" %}
+
+{% block title %}Youth Policy Pulse Dashboard{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-3">
+        <!-- Filters Sidebar -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-filter me-2"></i>Filters
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="GET" action="{{ url_for('index') }}" id="filterForm">
+                    <!-- Search -->
+                    <div class="mb-3">
+                        <label for="search" class="form-label">Search Bills</label>
+                        <input type="text" class="form-control" id="search" name="search" 
+                               value="{{ search_query }}" placeholder="Search by title or summary...">
+                    </div>
+                    
+                    <!-- Topic Filter -->
+                    <div class="mb-3">
+                        <label for="topic" class="form-label">Topic</label>
+                        <select class="form-select" id="topic" name="topic">
+                            <option value="">All Topics</option>
+                            {% for topic in topics %}
+                            <option value="{{ topic }}" {% if selected_topic == topic %}selected{% endif %}>
+                                {{ topic.replace('_', ' ').title() }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <!-- Chamber Filter -->
+                    <div class="mb-3">
+                        <label for="chamber" class="form-label">Chamber</label>
+                        <select class="form-select" id="chamber" name="chamber">
+                            <option value="both" {% if selected_chamber == 'both' %}selected{% endif %}>Both Chambers</option>
+                            <option value="house" {% if selected_chamber == 'house' %}selected{% endif %}>House</option>
+                            <option value="senate" {% if selected_chamber == 'senate' %}selected{% endif %}>Senate</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Page Size Selector -->
+                    <div class="mb-3">
+                        <label for="per_page" class="form-label">Bills per page</label>
+                        <select class="form-select" id="per_page" name="per_page">
+                            <option value="10" {% if per_page == 10 %}selected{% endif %}>10 bills</option>
+                            <option value="20" {% if per_page == 20 %}selected{% endif %}>20 bills</option>
+                            <option value="50" {% if per_page == 50 %}selected{% endif %}>50 bills</option>
+                        </select>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search me-1"></i>Apply Filters
+                        </button>
+                        <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times me-1"></i>Clear Filters
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-pie me-2"></i>Quick Stats
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6">
+                        <div class="stat-item">
+                            <h4 class="text-primary">{{ total_bills_all }}</h4>
+                            <p class="text-muted">Total Bills</p>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="stat-item">
+                            <h4 class="text-success">{{ house_bills }}</h4>
+                            <p class="text-muted">House Bills</p>
+                        </div>
+                    </div>
+                </div>
+                <hr>
+                <div class="row text-center">
+                    <div class="col-6">
+                        <div class="stat-item">
+                            <h4 class="text-info">{{ senate_bills }}</h4>
+                            <p class="text-muted">Senate Bills</p>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="stat-item">
+                            <h4 class="text-warning">{{ status_counts.get('Introduced', 0) }}</h4>
+                            <p class="text-muted">Introduced</p>
+                        </div>
+                    </div>
+                </div>
+                <hr>
+                <div class="row text-center">
+                    <div class="col-4">
+                        <div class="stat-item">
+                            <h4 class="text-secondary">{{ status_counts.get('In Committee', 0) }}</h4>
+                            <p class="text-muted">In Committee</p>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="stat-item">
+                            <h4 class="text-dark">{{ status_counts.get('On Calendar', 0) }}</h4>
+                            <p class="text-muted">On Calendar</p>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="stat-item">
+                            <h4 class="text-success">{{ status_counts.get('Passed/Enacted', 0) }}</h4>
+                            <p class="text-muted">Passed/Enacted</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- API Info -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-info-circle me-2"></i>Data Source
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="small">This dashboard integrates with:</p>
+                <ul class="list-unstyled small">
+                    <li><i class="fas fa-check text-success me-2"></i>Congress.gov API</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-9">
+        <!-- Bills List -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h2 class="mb-0">
+                    <i class="fas fa-file-alt me-2"></i>Congressional Bills
+                </h2>
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="refreshBills()">
+                        <i class="fas fa-sync me-1"></i>Refresh
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if bills %}
+                    <div class="row" id="billsContainer">
+                        {% for bill in bills %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card bill-card h-100">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h5 class="card-title">{{ bill.title }}</h5>
+                                        <span class="badge bg-{{ 'primary' if bill.chamber == 'House' else 'info' }}">
+                                            {{ bill.chamber }}
+                                        </span>
+                                    </div>
+                                    
+                                    <div class="mb-2">
+                                        <strong>Bill ID:</strong> {{ bill.bill_id }}<br>
+                                        <strong>Status:</strong> {{ bill.status }}<br>
+                                        <strong>Link:</strong> <a href="{{ bill.congress_url }}" target="_blank" class="text-decoration-none">View on Congress.gov <i class="fas fa-external-link-alt ms-1"></i></a>
+                                    </div>
+                                    
+                                    <div class="mb-2">
+                                        {% for topic in bill.topics %}
+                                        <span class="badge bg-secondary me-1">{{ topic.replace('_', ' ').title() }}</span>
+                                        {% endfor %}
+                                    </div>
+                                    
+                                    <!-- Vote Counts - Available for all users -->
+                                    <div class="mb-2">
+                                        <h6 class="text-center mb-3">
+                                            <i class="fas fa-vote-yea me-2"></i>Voting Status
+                                        </h6>
+                                        <div class="row text-center">
+                                            <div class="col-4">
+                                                <div class="vote-count">
+                                                    <i class="fas fa-thumbs-up text-success"></i>
+                                                    <span class="fw-bold text-success">{{ bill.up_votes or 0 }}</span>
+                                                    <small class="text-muted d-block">Support</small>
+                                                </div>
+                                            </div>
+                                            <div class="col-4">
+                                                <div class="vote-count">
+                                                    <i class="fas fa-thumbs-down text-danger"></i>
+                                                    <span class="fw-bold text-danger">{{ bill.down_votes or 0 }}</span>
+                                                    <small class="text-muted d-block">Oppose</small>
+                                                </div>
+                                            </div>
+                                            <div class="col-4">
+                                                <div class="vote-count">
+                                                    <i class="fas fa-users text-info"></i>
+                                                    <span class="fw-bold text-info">{{ bill.total_votes or 0 }}</span>
+                                                    <small class="text-muted d-block">Total</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div class="vote-summary">
+                                            <small class="text-muted">
+                                                <i class="fas fa-info-circle me-1"></i>Click "View Details" for more information
+                                            </small>
+                                        </div>
+                                        <div class="d-flex gap-2">
+                                            <a href="{{ url_for('bill_detail', bill_id=bill.bill_id) }}" class="btn btn-outline-primary btn-sm">
+                                                <i class="fas fa-eye me-1"></i>View Details
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                        <h4 class="text-muted">No bills found</h4>
+                        <p class="text-muted">Try adjusting your filters or search terms.</p>
+                        <a href="{{ url_for('index') }}" class="btn btn-primary">
+                            <i class="fas fa-refresh me-1"></i>Clear Filters
+                        </a>
+                    </div>
+                {% endif %}
+                
+                <!-- Pagination Controls -->
+                {% if total_pages > 1 %}
+                <div class="d-flex justify-content-between align-items-center mt-4">
+                    <div class="pagination-info">
+                        <small class="text-muted">
+                            Showing {{ (page - 1) * per_page + 1 }} to {{ [page * per_page, total_bills] | min }} of {{ total_bills }} bills
+                        </small>
+                    </div>
+                    
+                    <nav aria-label="Bills pagination">
+                        <ul class="pagination pagination-sm mb-0">
+                            <!-- Previous button -->
+                            <li class="page-item {% if not has_prev %}disabled{% endif %}">
+                                <a class="page-link" href="{% if has_prev %}{{ url_for('index', page=prev_page, per_page=per_page, topic=selected_topic, chamber=selected_chamber, search=search_query) }}{% else %}#{% endif %}">
+                                    <i class="fas fa-chevron-left"></i>
+                                </a>
+                            </li>
+                            
+                            <!-- Page numbers -->
+                            {% set start_page = [1, page - 2] | max %}
+                            {% set end_page = [total_pages, page + 2] | min %}
+                            
+                            {% if start_page > 1 %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('index', page=1, per_page=per_page, topic=selected_topic, chamber=selected_chamber, search=search_query) }}">1</a>
+                                </li>
+                                {% if start_page > 2 %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link">...</span>
+                                    </li>
+                                {% endif %}
+                            {% endif %}
+                            
+                            {% for p in range(start_page, end_page + 1) %}
+                                <li class="page-item {% if p == page %}active{% endif %}">
+                                    <a class="page-link" href="{{ url_for('index', page=p, per_page=per_page, topic=selected_topic, chamber=selected_chamber, search=search_query) }}">{{ p }}</a>
+                                </li>
+                            {% endfor %}
+                            
+                            {% if end_page < total_pages %}
+                                {% if end_page < total_pages - 1 %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link">...</span>
+                                    </li>
+                                {% endif %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('index', page=total_pages, per_page=per_page, topic=selected_topic, chamber=selected_chamber, search=search_query) }}">{{ total_pages }}</a>
+                                </li>
+                            {% endif %}
+                            
+                            <!-- Next button -->
+                            <li class="page-item {% if not has_next %}disabled{% endif %}">
+                                <a class="page-link" href="{% if has_next %}{{ url_for('index', page=next_page, per_page=per_page, topic=selected_topic, chamber=selected_chamber, search=search_query) }}{% else %}#{% endif %}">
+                                    <i class="fas fa-chevron-right"></i>
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function refreshBills() {
+    location.reload();
+}
+
+function fetchLiveData() {
+    const button = event.target;
+    const originalText = button.innerHTML;
+    
+    button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Fetching...';
+    button.disabled = true;
+    
+    fetch('/api/bills/fetch')
+        .then(response => response.json())
+        .then(data => {
+            if (data.length > 0) {
+                showNotification(`Fetched ${data.length} bills from Congress.gov API`, 'success');
+                // You could update the page with new data here
+            } else {
+                showNotification('No new bills found or API error', 'warning');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Error fetching live data', 'danger');
+        })
+        .finally(() => {
+            button.innerHTML = originalText;
+            button.disabled = false;
+        });
+}
+
+// Auto-submit form on filter change
+document.getElementById('topic').addEventListener('change', function() {
+    document.getElementById('filterForm').submit();
+});
+
+document.getElementById('chamber').addEventListener('change', function() {
+    document.getElementById('filterForm').submit();
+});
+
+// Search with debounce
+let searchTimeout;
+document.getElementById('search').addEventListener('input', function() {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        document.getElementById('filterForm').submit();
+    }, 500);
+});
+</script>
+{% endblock %}

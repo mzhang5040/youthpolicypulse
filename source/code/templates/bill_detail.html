@@ -1,0 +1,406 @@
+{% extends "base.html" %}
+
+{% block title %}{{ bill.title }} - Youth Policy Pulse{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h1 class="card-title mb-0">{{ bill.title }}</h1>
+                    <span class="badge bg-{{ 'primary' if bill.chamber == 'House' else 'info' }} fs-6">
+                        {{ bill.chamber }}
+                    </span>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- Bill ID and Sponsor -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h5><i class="fas fa-file-alt me-2"></i>Bill Information</h5>
+                        <ul class="list-unstyled">
+                            <li><strong>Bill ID:</strong> {{ bill.bill_id }}</li>
+                            <li><strong>Sponsor:</strong> {{ bill.sponsor }}</li>
+                            <li><strong>Status:</strong> {{ bill.status }}</li>
+                            <li><strong>Introduced Date:</strong> {{ bill.introduced_date }}</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h5><i class="fas fa-tags me-2"></i>Topics</h5>
+                        <div class="mb-3">
+                            {% for topic in bill.topics %}
+                            <span class="badge bg-secondary me-2 mb-2">{{ topic.replace('_', ' ').title() }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <hr>
+
+                <!-- Summary -->
+                <div class="mb-4">
+                    <h5><i class="fas fa-align-left me-2"></i>Summary</h5>
+                    <p class="lead">{{ bill.summary }}</p>
+                </div>
+
+                <!-- Latest Action -->
+                <div class="mb-4">
+                    <h5><i class="fas fa-clock me-2"></i>Latest Action</h5>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>{{ bill.latest_action }}
+                    </div>
+                </div>
+
+                <!-- Vote Statistics - Available for all users -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="fas fa-chart-bar me-2"></i>Public Opinion
+                        </h5>
+                        <div class="row text-center mb-3">
+                            <div class="col-4">
+                                <div class="vote-count">
+                                    <i class="fas fa-thumbs-up text-success"></i>
+                                    <span class="fw-bold text-success fs-4">{{ up_votes }}</span>
+                                    <small class="text-muted d-block">Support</small>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="vote-count">
+                                    <i class="fas fa-thumbs-down text-danger"></i>
+                                    <span class="fw-bold text-danger fs-4">{{ down_votes }}</span>
+                                    <small class="text-muted d-block">Oppose</small>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="vote-count">
+                                    <i class="fas fa-users text-info"></i>
+                                    <span class="fw-bold text-info fs-4">{{ up_votes + down_votes }}</span>
+                                    <small class="text-muted d-block">Total Votes</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Voting buttons - Only for logged-in users -->
+                        {% if current_user.is_authenticated %}
+                        <div class="text-center">
+                            <h6 class="mb-3">Do you support this bill?</h6>
+                            <div class="d-flex justify-content-center gap-3">
+                                <div class="btn-group" role="group">
+                                    <button type="button" class="btn btn-outline-success vote-btn" 
+                                            data-vote="up" onclick="voteBill('{{ bill.bill_id }}', 'up')">
+                                        <i class="fas fa-thumbs-up me-1"></i>
+                                        <span id="up-count">{{ up_votes }}</span>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-danger vote-btn" 
+                                            data-vote="down" onclick="voteBill('{{ bill.bill_id }}', 'down')">
+                                        <i class="fas fa-thumbs-down me-1"></i>
+                                        <span id="down-count">{{ down_votes }}</span>
+                                    </button>
+                                </div>
+                                <div class="vote-status">
+                                    {% if user_vote_type %}
+                                    <span class="badge bg-{{ 'success' if user_vote_type == 'up' else 'danger' }}">
+                                        You voted {{ 'thumbs up' if user_vote_type == 'up' else 'thumbs down' }}
+                                    </span>
+                                    {% else %}
+                                    <span class="text-muted">Cast your vote above</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% else %}
+                        <!-- Login prompt for voting -->
+                        <div class="text-center">
+                            <div class="alert alert-info">
+                                <i class="fas fa-lock me-2"></i>
+                                <strong>Want to vote?</strong> Please log in to share your opinion on this bill.
+                                <br>
+                                <a href="{{ url_for('login') }}" class="btn btn-primary btn-sm mt-2">
+                                    <i class="fas fa-sign-in-alt me-1"></i>Log In to Vote
+                                </a>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="d-flex gap-2 mb-4">
+                    <a href="{{ url_for('index') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-arrow-left me-1"></i>Back to Bills
+                    </a>
+                    {% if current_user.is_authenticated %}
+                        <button class="btn btn-outline-success" id="watchlistBtn" onclick="toggleWatchlist('{{ bill.bill_id }}', '{{ bill.title }}')">
+                            <i class="fas fa-bookmark me-1"></i>Add to Watchlist
+                        </button>
+                    {% else %}
+                        <a href="{{ url_for('login') }}" class="btn btn-outline-success">
+                            <i class="fas fa-bookmark me-1"></i>Login to Track
+                        </a>
+                    {% endif %}
+                    <button class="btn btn-outline-info" onclick="shareBill('{{ bill.bill_id }}')">
+                        <i class="fas fa-share me-1"></i>Share
+                    </button>
+                </div>
+
+                <!-- Additional Information -->
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h6 class="card-title">
+                                    <i class="fas fa-info-circle me-2"></i>Bill Details
+                                </h6>
+                                <ul class="list-unstyled small">
+                                    <li><strong>Congress:</strong> 118th</li>
+                                    <li><strong>Type:</strong> {{ 'House Resolution' if bill.bill_id.startswith('hr') else 'Senate Bill' }}</li>
+                                    <li><strong>Chamber:</strong> {{ bill.chamber }}</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h6 class="card-title">
+                                    <i class="fas fa-external-link-alt me-2"></i>External Links
+                                </h6>
+                                <div class="d-grid gap-2">
+                                    <a href="{{ generate_congress_url(bill) }}" 
+                                       target="_blank" class="btn btn-outline-success btn-sm">
+                                        <i class="fas fa-chart-line me-1"></i>Track on Congress.gov
+                                    </a>
+                                </div>
+                                <small class="text-muted mt-2 d-block">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    External links may require manual navigation if automated access is restricted.
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Comments Section -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-comments me-2"></i>Comments ({{ comments|length }})
+                </h5>
+            </div>
+            <div class="card-body">
+                <!-- Add Comment Form - Only for logged-in users -->
+                {% if current_user.is_authenticated %}
+                <div class="mb-4">
+                    <h6>Leave a Comment</h6>
+                    <form id="commentForm">
+                        <div class="mb-3">
+                            <label for="comment_content" class="form-label">Comment</label>
+                            <textarea class="form-control" id="comment_content" rows="4" required 
+                                      placeholder="Share your thoughts on this bill..."></textarea>
+                            <div class="form-text">Comments are auto-approved for logged-in users.</div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-paper-plane me-1"></i>Submit Comment
+                        </button>
+                    </form>
+                </div>
+                {% else %}
+                <!-- Login prompt for commenting -->
+                <div class="mb-4">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <h6><i class="fas fa-lock me-2"></i>Commenting requires login</h6>
+                            <p class="text-muted mb-3">Please log in to share your thoughts on this bill.</p>
+                            <a href="{{ url_for('login') }}" class="btn btn-primary">
+                                <i class="fas fa-sign-in-alt me-1"></i>Log In to Comment
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <hr>
+
+                <!-- Comments List -->
+                <div id="comments-list">
+                    {% if comments %}
+                        {% for comment in comments %}
+                        <div class="comment-item mb-3 p-3 border rounded">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h6 class="mb-0">{{ comment.author_name }}</h6>
+                                <small class="text-muted">{{ comment.created_at.strftime('%B %d, %Y at %I:%M %p') }}</small>
+                            </div>
+                            <p class="mb-0">{{ comment.content }}</p>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-comment-slash fa-2x text-muted mb-3"></i>
+                            <p class="text-muted">No comments yet. Be the first to share your thoughts!</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function trackBill(billId) {
+    // In a real application, this would save to user's tracking list
+    showNotification(`Bill ${billId} added to your tracking list`, 'success');
+}
+
+
+function shareBill(billId) {
+    const url = window.location.href;
+    if (navigator.share) {
+        navigator.share({
+            title: '{{ bill.title }}',
+            text: 'Check out this Congressional bill',
+            url: url
+        });
+    } else {
+        // Fallback to copying URL
+        navigator.clipboard.writeText(url).then(() => {
+            showNotification('Bill URL copied to clipboard', 'success');
+        });
+    }
+}
+
+function voteBill(billId, voteType) {
+    fetch(`/api/bills/${billId}/vote`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            vote_type: voteType
+        })
+    })
+    .then(response => {
+        if (response.status === 401) {
+            showNotification('Please log in to vote on bills', 'warning');
+            // Redirect to login page
+            window.location.href = '/login';
+            return;
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data && data.success) {
+            // Update vote counts
+            document.getElementById('up-count').textContent = data.up_votes;
+            document.getElementById('down-count').textContent = data.down_votes;
+            
+            // Update vote buttons styling
+            document.querySelectorAll('.vote-btn').forEach(btn => {
+                btn.classList.remove('btn-success', 'btn-danger');
+                btn.classList.add('btn-outline-success', 'btn-outline-danger');
+            });
+            
+            // Highlight the voted button
+            const votedBtn = document.querySelector(`[data-vote="${voteType}"]`);
+            if (voteType === 'up') {
+                votedBtn.classList.remove('btn-outline-success');
+                votedBtn.classList.add('btn-success');
+            } else {
+                votedBtn.classList.remove('btn-outline-danger');
+                votedBtn.classList.add('btn-danger');
+            }
+            
+            // Update vote status
+            const voteStatus = document.querySelector('.vote-status');
+            voteStatus.innerHTML = `<span class="badge bg-${voteType === 'up' ? 'success' : 'danger'}">You voted thumbs ${voteType === 'up' ? 'up' : 'down'}</span>`;
+            
+            showNotification(`Vote recorded!`, 'success');
+        } else if (data) {
+            showNotification(data.error || 'Failed to vote', 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Error voting on bill', 'danger');
+    });
+}
+
+// Comment form submission
+document.getElementById('commentForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = {
+        content: document.getElementById('comment_content').value
+    };
+    
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Submitting...';
+    submitBtn.disabled = true;
+    
+    fetch(`/api/bills/{{ bill.bill_id }}/comments`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => {
+        if (response.status === 401) {
+            showNotification('Please log in to comment on bills', 'warning');
+            // Redirect to login page
+            window.location.href = '/login';
+            return;
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data && data.success) {
+            showNotification(data.message, 'success');
+            
+            // Clear form
+            document.getElementById('commentForm').reset();
+            
+            // Reload page to show new comment (if approved)
+            if (data.comment.is_approved) {
+                setTimeout(() => location.reload(), 1000);
+            }
+        } else {
+            showNotification(data.error || 'Failed to submit comment', 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Error submitting comment', 'danger');
+    })
+    .finally(() => {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    });
+});
+
+// Utility function for notifications
+function showNotification(message, type = 'info') {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    alertDiv.style.top = '20px';
+    alertDiv.style.right = '20px';
+    alertDiv.style.zIndex = '9999';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(alertDiv);
+    
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 5000);
+}
+</script>
+{% endblock %}

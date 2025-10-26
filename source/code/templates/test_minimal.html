@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minimal Test - No Flashing</title>
+    <style>
+        * {
+            animation: none !important;
+            transition: none !important;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        
+        .bill-card {
+            border: 1px solid #ddd;
+            margin: 10px 0;
+            padding: 15px;
+            background: white;
+            opacity: 1 !important;
+            visibility: visible !important;
+            display: block !important;
+        }
+        
+        .bill-card * {
+            animation: none !important;
+            transition: none !important;
+            opacity: 1 !important;
+        }
+    </style>
+</head>
+<body>
+    <h1>Minimal Test - Bills Should Not Flash</h1>
+    
+    <div id="billsContainer">
+        <div class="bill-card">
+            <h3>Test Bill 1</h3>
+            <p>This is a test bill to check for flashing issues.</p>
+        </div>
+        <div class="bill-card">
+            <h3>Test Bill 2</h3>
+            <p>This is another test bill to check for flashing issues.</p>
+        </div>
+        <div class="bill-card">
+            <h3>Test Bill 3</h3>
+            <p>This is a third test bill to check for flashing issues.</p>
+        </div>
+    </div>
+    
+    <script>
+        // Force all elements to be visible
+        function makeAllVisible() {
+            document.querySelectorAll('*').forEach(element => {
+                element.style.opacity = '1';
+                element.style.visibility = 'visible';
+                element.style.display = element.style.display || '';
+            });
+        }
+        
+        // Run immediately and periodically
+        makeAllVisible();
+        setInterval(makeAllVisible, 100);
+        
+        console.log('Minimal test page loaded - check for flashing');
+    </script>
+</body>
+</html>
+
