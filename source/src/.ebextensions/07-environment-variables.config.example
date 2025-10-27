@@ -1,0 +1,17 @@
+option_settings:
+  aws:elasticbeanstalk:application:environment:
+    # OpenAI API Key for bill summaries
+    OPENAI_API_KEY: "YOUR_OPENAI_API_KEY_HERE"
+    # Congress API Key (optional)
+    CONGRESS_API_KEY: "YOUR_CONGRESS_API_KEY_HERE"
+    # Email configuration (optional)
+    SMTP_USERNAME: "YOUR_SMTP_USERNAME_HERE"
+    SMTP_PASSWORD: "YOUR_SMTP_PASSWORD_HERE"
+    # AWS SES configuration (optional)
+    AWS_ACCESS_KEY_ID: "YOUR_AWS_ACCESS_KEY_ID_HERE"
+    AWS_SECRET_ACCESS_KEY: "YOUR_AWS_SECRET_ACCESS_KEY_HERE"
+    # MySQL configuration (optional)
+    MYSQL_HOST: "YOUR_MYSQL_HOST_HERE"
+    MYSQL_USER: "YOUR_MYSQL_USER_HERE"
+    MYSQL_PASSWORD: "YOUR_MYSQL_PASSWORD_HERE"
+    MYSQL_DATABASE: "YOUR_MYSQL_DATABASE_HERE"

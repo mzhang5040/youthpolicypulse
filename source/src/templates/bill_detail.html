@@ -38,10 +38,23 @@
 
                 <hr>
 
-                <!-- Summary -->
+                <!-- Plain English Summary -->
                 <div class="mb-4">
-                    <h5><i class="fas fa-align-left me-2"></i>Summary</h5>
-                    <p class="lead">{{ bill.summary }}</p>
+                    <h5><i class="fas fa-graduation-cap me-2"></i>In Plain English</h5>
+                    <div class="alert alert-light border">
+                        <i class="fas fa-lightbulb text-warning me-2"></i>
+                        <strong>What this bill says:</strong>
+                        <p class="mb-0 mt-2">
+                            {% if plain_english_summary %}
+                                {{ plain_english_summary }}
+                            {% else %}
+                                <div class="d-flex align-items-center">
+                                    <div class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></div>
+                                    <em>Generating plain English explanation... This may take a few minutes.</em>
+                                </div>
+                            {% endif %}
+                        </p>
+                    </div>
                 </div>
 
                 <!-- Latest Action -->
@@ -330,8 +343,12 @@ function voteBill(billId, voteType) {
     });
 }
 
-// Comment form submission
-document.getElementById('commentForm').addEventListener('submit', function(e) {
+// Comment form submission - wrapped in DOM ready check
+window.onload = function() {
+    console.log('Window loaded at:', new Date().toLocaleTimeString(), '- initializing...');
+    const commentForm = document.getElementById('commentForm');
+    if (commentForm) {
+        commentForm.addEventListener('submit', function(e) {
     e.preventDefault();
     
     const formData = {
@@ -366,9 +383,9 @@ document.getElementById('commentForm').addEventListener('submit', function(e) {
             // Clear form
             document.getElementById('commentForm').reset();
             
-            // Reload page to show new comment (if approved)
+            // Update comment section dynamically instead of reloading page
             if (data.comment.is_approved) {
-                setTimeout(() => location.reload(), 1000);
+                addCommentToPage(data.comment);
             }
         } else {
             showNotification(data.error || 'Failed to submit comment', 'danger');
@@ -382,7 +399,131 @@ document.getElementById('commentForm').addEventListener('submit', function(e) {
         submitBtn.innerHTML = originalText;
         submitBtn.disabled = false;
     });
-});
+        });
+    }
+    
+// Plain English summary loading - run immediately when script loads
+(function() {
+    console.log('Starting summary fetch immediately at:', new Date().toLocaleTimeString());
+    
+    try {
+        const plainEnglishSection = document.querySelector('.alert-light');
+        
+        if (plainEnglishSection) {
+            // Check if summary is already loaded (more robust than flag)
+            const hasLoadingMessage = plainEnglishSection.textContent.includes('Generating plain English explanation');
+            const hasSummary = plainEnglishSection.textContent.length > 100 && !hasLoadingMessage;
+            
+            if (hasSummary) {
+                console.log('✅ Summary already loaded, skipping API call');
+                return;
+            }
+            
+            if (hasLoadingMessage) {
+                console.log('Found loading section, fetching summary immediately...');
+                
+                // Get bill ID from URL
+                const pathParts = window.location.pathname.split('/');
+                const billId = pathParts[pathParts.length - 1];
+                console.log('Bill ID from URL:', billId);
+                
+                if (billId) {
+                    fetch(`/api/bill/${billId}/summary`)
+                        .then(response => response.json())
+                        .then(data => {
+                            console.log('API response:', data);
+                            if (data.success) {
+                                // Find the loading div specifically and replace it
+                                const loadingDiv = plainEnglishSection.querySelector('.d-flex.align-items-center');
+                                if (loadingDiv) {
+                                    loadingDiv.outerHTML = data.summary;
+                                    console.log('✅ Loading message completely removed and replaced with summary');
+                                } else {
+                                    // Fallback: replace the entire p element content
+                                    const contentElement = plainEnglishSection.querySelector('p');
+                                    if (contentElement) {
+                                        contentElement.innerHTML = data.summary;
+                                        console.log('Summary updated via fallback method');
+                                    }
+                                }
+                            } else {
+                                // Find the loading div specifically and replace it with error message
+                                const loadingDiv = plainEnglishSection.querySelector('.d-flex.align-items-center');
+                                if (loadingDiv) {
+                                    loadingDiv.outerHTML = '<em>Unable to generate summary at this time.</em>';
+                                    console.log('✅ Loading message replaced with error message');
+                                } else {
+                                    const contentElement = plainEnglishSection.querySelector('p');
+                                    if (contentElement) {
+                                        contentElement.innerHTML = '<em>Unable to generate summary at this time.</em>';
+                                    }
+                                }
+                                console.error('Failed to load summary:', data.error);
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Fetch error:', error);
+                            // Find the loading div specifically and replace it with error message
+                            const loadingDiv = plainEnglishSection.querySelector('.d-flex.align-items-center');
+                            if (loadingDiv) {
+                                loadingDiv.outerHTML = '<em>Unable to generate summary at this time.</em>';
+                                console.log('✅ Loading message replaced with error message (catch)');
+                            } else {
+                                const contentElement = plainEnglishSection.querySelector('p');
+                                if (contentElement) {
+                                    contentElement.innerHTML = '<em>Unable to generate summary at this time.</em>';
+                                }
+                            }
+                        });
+                }
+            } else {
+                console.log('ℹ️ No loading message found, skipping API call');
+            }
+        }
+    } catch (error) {
+        console.error('Error in summary fetch:', error);
+    }
+})();
+};
+
+// Function to add new comment to the page dynamically
+function addCommentToPage(comment) {
+    const commentsList = document.getElementById('comments-list');
+    if (commentsList) {
+        // Check if there's a "no comments" message to remove
+        const noCommentsMsg = commentsList.querySelector('.text-center');
+        if (noCommentsMsg) {
+            noCommentsMsg.remove();
+        }
+        
+        // Create new comment element matching the existing structure
+        const commentElement = document.createElement('div');
+        commentElement.className = 'comment-item mb-3 p-3 border rounded';
+        commentElement.innerHTML = `
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <h6 class="mb-0">${comment.user_name || 'Anonymous'}</h6>
+                <small class="text-muted">${new Date(comment.created_at).toLocaleString()}</small>
+            </div>
+            <p class="mb-0">${comment.content}</p>
+        `;
+        
+        // Add comment to the top of the comments list
+        commentsList.insertBefore(commentElement, commentsList.firstChild);
+        
+        // Update comment count in the header
+        const commentCountElement = document.querySelector('.card-header h5');
+        if (commentCountElement) {
+            const currentText = commentCountElement.textContent;
+            const match = currentText.match(/Comments \((\d+)\)/);
+            if (match) {
+                const currentCount = parseInt(match[1]);
+                commentCountElement.innerHTML = `<i class="fas fa-comments me-2"></i>Comments (${currentCount + 1})`;
+            }
+        }
+        
+        console.log('✅ Comment added to page dynamically');
+    }
+}
 
 // Utility function for notifications
 function showNotification(message, type = 'info') {

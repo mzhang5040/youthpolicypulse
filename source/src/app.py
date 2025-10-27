@@ -20,6 +20,7 @@ from email.mime.multipart import MIMEMultipart
 import boto3
 from botocore.exceptions import ClientError
 from werkzeug.security import generate_password_hash, check_password_hash
+import openai
 
 app = Flask(__name__)
 app.secret_key = 'your-secret-key-change-this-in-production'
@@ -316,6 +317,10 @@ class ResetPasswordForm(FlaskForm):
 # Congress.gov API configuration
 CONGRESS_API_KEY = os.getenv('CONGRESS_API_KEY', 'your-api-key-here')
 CONGRESS_BASE_URL = 'https://api.congress.gov/v3'
+
+# OpenAI configuration
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY', '')
+openai.api_key = OPENAI_API_KEY
 
 # Email configuration
 # AWS SES Configuration
@@ -1191,6 +1196,73 @@ def generate_verification_token():
     """Generate a secure random token for email verification"""
     return secrets.token_urlsafe(32)
 
+def generate_plain_english_summary(bill_title, bill_summary, bill_status):
+    """Generate a plain English summary of a bill using OpenAI"""
+    if not OPENAI_API_KEY:
+        return "Plain English summary not available (OpenAI API key not configured)"
+    
+    try:
+        # Create a prompt for OpenAI
+        # If summary is generic, focus on the title
+        if bill_summary == "Text not available" or not bill_summary.strip():
+            prompt = f"""
+            Please provide a brief, plain English explanation of this Congressional bill in 2-3 sentences based on its title. 
+            Make it easy for a high school student to understand what this bill might do and why it matters.
+            
+            Bill Title: {bill_title}
+            Current Status: {bill_status}
+            
+            Based on the title, explain what this bill likely does:
+            """
+        else:
+            prompt = f"""
+            Please provide a brief, plain English summary of this Congressional bill in 2-3 sentences. 
+            Make it easy for a high school student to understand what this bill does and why it matters.
+            
+            Bill Title: {bill_title}
+            Bill Summary: {bill_summary}
+            Current Status: {bill_status}
+            
+            Summary:
+            """
+        
+        # Call OpenAI API using the new responses endpoint
+        import requests
+        
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {OPENAI_API_KEY}"
+        }
+        
+        data = {
+            "model": "gpt-5-nano",
+            "input": prompt,
+            "store": True
+        }
+        
+        response = requests.post("https://api.openai.com/v1/responses", headers=headers, json=data, timeout=30)
+        
+        if response.status_code == 200:
+            result = response.json()
+            if result.get("status") == "completed" and result.get("output"):
+                # Extract the text from the output
+                for output_item in result["output"]:
+                    if output_item.get("type") == "message" and output_item.get("content"):
+                        for content_item in output_item["content"]:
+                            if content_item.get("type") == "output_text":
+                                summary = content_item["text"].strip()
+                                return summary
+            
+            # Fallback if structure is different
+            return "Plain English summary generated but format unexpected"
+        else:
+            print(f"OpenAI API error: {response.status_code} - {response.text}")
+            return "Plain English summary temporarily unavailable"
+        
+    except Exception as e:
+        print(f"Error generating OpenAI summary: {e}")
+        return "Plain English summary temporarily unavailable"
+
 def send_email_aws_ses(to_email, subject, html_content, text_content):
     """Send email using AWS SES"""
     try:
@@ -1339,43 +1411,54 @@ def index():
     if per_page not in [10, 20, 50]:
         per_page = 10
     
-    # Ultra-optimized approach: Use static stats and fetch only current page bills
-    print(f"🎯 Ultra-optimized: Static stats + current page only")
+    print(f"🎯 Fetching bills and applying filters")
     
-    # Fetch bills for current page and get real statistics from API
+    # Fetch all bills (without limit) to support proper filtering
     try:
-        # Get bills for current page and extract real stats from API response
-        bills_for_page, api_stats = get_processed_bills_cached_with_stats(chamber_filter, 118, per_page)
-        if not bills_for_page:
+        # Call with no limit parameter to fetch cached full dataset
+        all_bills = get_processed_bills_cached(chamber='both', congress=118)
+        if not all_bills:
             print("⚠️ No bills returned from API")
-            bills_for_page = []
-            api_stats = {'total_bills': 0, 'house_bills': 0, 'senate_bills': 0}
+            all_bills = []
     except Exception as e:
         print(f"Error fetching bills from API: {e}")
-        bills_for_page = []
-        api_stats = {'total_bills': 0, 'house_bills': 0, 'senate_bills': 0}
+        all_bills = []
     
-    # Use real API statistics
-    total_bills = api_stats.get('total_bills', 0)
+    # Apply filters to ALL bills before pagination
+    filtered_bills = all_bills
+    
+    if topic_filter:
+        filtered_bills = [bill for bill in filtered_bills if topic_filter in bill.get('topics', [])]
+    
+    if chamber_filter != 'both':
+        filtered_bills = [bill for bill in filtered_bills if bill.get('chamber', '').lower() == chamber_filter.lower()]
+    
+    if search_query:
+        search_lower = search_query.lower()
+        filtered_bills = [bill for bill in filtered_bills 
+                        if search_lower in bill.get('title', '').lower() 
+                        or search_lower in bill.get('summary', '').lower()]
+    
+    # Calculate pagination based on filtered results
+    total_bills = len(filtered_bills)
     total_pages = (total_bills + per_page - 1) // per_page if total_bills > 0 else 1
     
     # Ensure page is within valid range
     page = max(1, min(page, total_pages)) if total_pages > 0 else 1
     
-    # Apply filters to current page bills
-    if topic_filter:
-        bills_for_page = [bill for bill in bills_for_page if topic_filter in bill.get('topics', [])]
+    # Paginate filtered results
+    start_idx = (page - 1) * per_page
+    end_idx = start_idx + per_page
+    bills_for_page = filtered_bills[start_idx:end_idx]
     
-    if chamber_filter != 'both':
-        bills_for_page = [bill for bill in bills_for_page if bill.get('chamber', '').lower() == chamber_filter.lower()]
+    print(f"⚡ Displaying {len(bills_for_page)} bills for page {page} (filtered from {total_bills} total bills)")
     
-    if search_query:
-        search_lower = search_query.lower()
-        bills_for_page = [bill for bill in bills_for_page 
-                        if search_lower in bill.get('title', '').lower() 
-                        or search_lower in bill.get('summary', '').lower()]
-    
-    print(f"⚡ Displaying {len(bills_for_page)} bills for page {page} (ultra-optimized)")
+    # Get API statistics for stats display
+    try:
+        _, api_stats = get_processed_bills_cached_with_stats(chamber_filter, 118, per_page)
+    except Exception as e:
+        print(f"Error fetching stats: {e}")
+        api_stats = {'total_bills': 0, 'house_bills': 0, 'senate_bills': 0}
     
     # Add vote counts to bills
     bills_for_page = add_vote_counts_to_bills(bills_for_page)
@@ -2084,10 +2167,12 @@ def verify_contact(token):
 @app.route('/bill/<bill_id>')
 def bill_detail(bill_id):
     """Bill detail page"""
+    print(f"🚀 BILL DETAIL ROUTE CALLED with bill_id: {bill_id}")
     # Make a targeted API call for this specific bill
     bill = None
     try:
         print(f"🔍 Fetching detailed information for bill: {bill_id}")
+        print(f"🔍 Bill ID parts: {bill_id.split('-')}")
         # Make a targeted API call for this specific bill instead of fetching all bills
         # Parse bill_id to get components for targeted API call
         parts = bill_id.split('-')
@@ -2095,13 +2180,31 @@ def bill_detail(bill_id):
             bill_identifier = parts[0]  # hr1234 or s1234
             congress_number = parts[1]  # 118
             
-            # Extract bill type and number
+            # Extract bill type and number - use the same logic as process_congress_bill
             if bill_identifier.startswith('hr'):
                 bill_type = 'hr'
                 bill_number = bill_identifier[2:]
             elif bill_identifier.startswith('s'):
                 bill_type = 's'
                 bill_number = bill_identifier[1:]
+            elif bill_identifier.startswith('hjres'):
+                bill_type = 'hjres'
+                bill_number = bill_identifier[5:]
+            elif bill_identifier.startswith('sjres'):
+                bill_type = 'sjres'
+                bill_number = bill_identifier[5:]
+            elif bill_identifier.startswith('hconres'):
+                bill_type = 'hconres'
+                bill_number = bill_identifier[7:]
+            elif bill_identifier.startswith('sconres'):
+                bill_type = 'sconres'
+                bill_number = bill_identifier[7:]
+            elif bill_identifier.startswith('hres'):
+                bill_type = 'hres'
+                bill_number = bill_identifier[4:]
+            elif bill_identifier.startswith('sres'):
+                bill_type = 'sres'
+                bill_number = bill_identifier[4:]
             else:
                 bill_type = bill_identifier
                 bill_number = '1'
@@ -2111,18 +2214,27 @@ def bill_detail(bill_id):
             headers = {'X-API-Key': CONGRESS_API_KEY}
             
             print(f"🌐 Making targeted API call: {detail_url}")
+            print(f"🌐 Parsed - Congress: {congress_number}, Type: {bill_type}, Number: {bill_number}")
             detail_response = requests.get(detail_url, headers=headers)
             
             if detail_response.status_code == 200:
                 detail_data = detail_response.json()
                 api_bill = detail_data.get('bill', {})
+                print(f"📄 API response contains bill: {bool(api_bill)}")
                 if api_bill:
                     processed_bill = process_congress_bill(api_bill)
+                    print(f"📄 Processed bill ID: {processed_bill.get('bill_id') if processed_bill else 'None'}")
+                    print(f"📄 Expected bill ID: {bill_id}")
                     if processed_bill and processed_bill.get('bill_id') == bill_id:
                         bill = processed_bill
                         print(f"✅ Found detailed information for {bill_id}")
+                    else:
+                        print(f"❌ Bill ID mismatch: expected {bill_id}, got {processed_bill.get('bill_id') if processed_bill else 'None'}")
+                else:
+                    print(f"❌ No bill data in API response")
             else:
                 print(f"❌ Targeted API call failed: {detail_response.status_code}")
+                print(f"❌ Response text: {detail_response.text[:200]}")
     except Exception as e:
         print(f"Error fetching detailed bill info: {e}")
     
@@ -2151,13 +2263,110 @@ def bill_detail(bill_id):
     bill['down_votes'] = down_votes
     bill['total_votes'] = up_votes + down_votes
     
+    # Don't generate summary here - let JavaScript fetch it asynchronously
+    print(f"🎯 RENDERING TEMPLATE immediately for bill: {bill.get('title', '')}")
     return render_template('bill_detail.html', 
                          bill=bill, 
                          comments=comments,
                          up_votes=up_votes,
                          down_votes=down_votes,
                          user_vote_type=user_vote_type,
+                         plain_english_summary=None,  # Will be fetched by JavaScript
                          generate_congress_url=generate_congress_url)
+
+@app.route('/api/bill/<bill_id>/summary')
+def get_bill_summary(bill_id):
+    """API endpoint to get plain English summary for a bill"""
+    try:
+        print(f"🔍 API Summary Request for bill_id: {bill_id}")
+        
+        # Parse bill_id to get components
+        parts = bill_id.split('-')
+        print(f"🔍 Parsed parts: {parts}")
+        
+        if len(parts) >= 2:
+            bill_identifier = parts[0]  # hr1234 or s1234
+            congress_number = parts[1]  # 118
+            
+            print(f"🔍 Bill identifier: {bill_identifier}, Congress: {congress_number}")
+            
+            # Extract bill type and number - use the same logic as process_congress_bill
+            if bill_identifier.startswith('hr'):
+                bill_type = 'hr'
+                bill_number = bill_identifier[2:]
+            elif bill_identifier.startswith('s'):
+                bill_type = 's'
+                bill_number = bill_identifier[1:]
+            elif bill_identifier.startswith('hjres'):
+                bill_type = 'hjres'
+                bill_number = bill_identifier[5:]
+            elif bill_identifier.startswith('sjres'):
+                bill_type = 'sjres'
+                bill_number = bill_identifier[5:]
+            elif bill_identifier.startswith('hconres'):
+                bill_type = 'hconres'
+                bill_number = bill_identifier[7:]
+            elif bill_identifier.startswith('sconres'):
+                bill_type = 'sconres'
+                bill_number = bill_identifier[7:]
+            elif bill_identifier.startswith('hres'):
+                bill_type = 'hres'
+                bill_number = bill_identifier[4:]
+            elif bill_identifier.startswith('sres'):
+                bill_type = 'sres'
+                bill_number = bill_identifier[4:]
+            else:
+                bill_type = bill_identifier
+                bill_number = '1'
+            
+            print(f"🔍 Bill type: {bill_type}, Bill number: {bill_number}")
+            
+            # Make targeted API call to get bill details
+            detail_url = f"{CONGRESS_BASE_URL}/bill/{congress_number}/{bill_type}/{bill_number}"
+            headers = {'X-API-Key': CONGRESS_API_KEY}
+            
+            print(f"🔍 API call to: {detail_url}")
+            response = requests.get(detail_url, headers=headers, timeout=10)
+            print(f"📡 API response status: {response.status_code}")
+            
+            if response.status_code == 200:
+                bill_data = response.json()
+                print(f"📡 API response data keys: {list(bill_data.keys())}")
+                
+                if bill_data.get('bill'):
+                    bill = bill_data['bill']
+                    print(f"📡 Found bill: {bill.get('title', 'No title')}")
+                    
+                    # Generate plain English summary
+                    summary = generate_plain_english_summary(
+                        bill.get('title', ''),
+                        bill.get('summary', ''),
+                        bill.get('status', '')
+                    )
+                    
+                    print(f"📝 Generated summary: {summary[:100]}...")
+                    
+                    return jsonify({
+                        'success': True,
+                        'summary': summary
+                    })
+                else:
+                    print(f"📡 No bill found in response")
+            else:
+                print(f"📡 API error: {response.status_code} - {response.text}")
+        
+        print(f"📡 Returning 'Bill not found' error")
+        return jsonify({
+            'success': False,
+            'error': 'Bill not found'
+        })
+        
+    except Exception as e:
+        print(f"Error generating summary: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        })
 
 @app.route('/test')
 def test_minimal():
